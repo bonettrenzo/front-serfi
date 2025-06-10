@@ -1,5 +1,6 @@
 import  React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
+import * as authServices from "../services/auth.services"
 
 
 const AuthContext = createContext()
@@ -54,7 +55,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   const login = async (email, password) => {
-    const foundUser = mockUsers.find((u) => u.email === email && u.password === password)
+    const foundUser = await authServices.loginUser(email, password)
 
     if (foundUser) {
       const userWithoutPassword = {
@@ -64,7 +65,7 @@ export function AuthProvider({ children }) {
         pais: foundUser.pais,
         rolNombre: foundUser.rolNombre,
         permisos: foundUser.permisos,
-        ultimaConexion: new Date().toISOString(),
+        ultimaConexion: new Date(foundUser.ultimaConexion).toISOString(),
       }
 
       setUser(userWithoutPassword)

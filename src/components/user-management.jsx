@@ -26,10 +26,10 @@ import { Edit, Delete, Add, Visibility } from "@mui/icons-material"
 import { useAuth } from "../contexts/auth-context"
 import { useCache } from "../contexts/cache-context"
 import PermissionGuard from "./permission-guard"
+import * as usuariosService from "../services/usuarios.service"
 
-const availablePermissions = ["CrearUsuario", "EditarUsuario", "EliminarUsuario", "LeerUsuarios", "LeerPropiosDatos"]
 
-const roles = ["Administrador", "Operador", "Cliente"]
+const roles = [{ id: 1, name: "Admin" }, { id: 2, name: "Operador" }, { id: 3, name: "Cliente" }]
 
 export default function UserManagement() {
   const { user: currentUser, hasPermission } = useAuth()
@@ -40,10 +40,10 @@ export default function UserManagement() {
   const [editingUser, setEditingUser] = useState(null)
   const [formData, setFormData] = useState({
     nombreCompleto: "",
+    password: "",
     email: "",
     pais: "",
-    rolNombre: "",
-    permisos: [],
+    RolesId: "",
   })
 
   useEffect(() => {
@@ -51,38 +51,11 @@ export default function UserManagement() {
     loadCountries()
   }, [])
 
-  const loadUsers = () => {
-    // Mock data - en producción vendría de tu API
-    const mockUsers = [
-      {
-        id: 1,
-        nombreCompleto: "Juan Pérez",
-        email: "admin@example.com",
-        pais: "Chile",
-        rolNombre: "Administrador",
-        permisos: ["CrearUsuario", "EditarUsuario", "EliminarUsuario", "LeerUsuarios", "LeerPropiosDatos"],
-        ultimaConexion: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        nombreCompleto: "María García",
-        email: "operador@example.com",
-        pais: "Argentina",
-        rolNombre: "Operador",
-        permisos: ["EditarUsuario", "LeerUsuarios", "LeerPropiosDatos"],
-        ultimaConexion: new Date().toISOString(),
-      },
-      {
-        id: 3,
-        nombreCompleto: "Carlos López",
-        email: "cliente@example.com",
-        pais: "México",
-        rolNombre: "Cliente",
-        permisos: ["LeerPropiosDatos"],
-        ultimaConexion: new Date().toISOString(),
-      },
-    ]
-    setUsers(mockUsers)
+  const loadUsers = async () => {
+
+    const users = await usuariosService.listUsers()
+    setUsers(users)    
+ 
   }
 
   const loadCountries = async () => {
@@ -136,6 +109,26 @@ export default function UserManagement() {
   }
 
   const handleSave = () => {
+
+    if(!formData.email){
+      alert("Por favor, introduzca un correo electrónico válido")
+      return
+    }
+    if(!formData.password){
+      alert("Por favor, introduzca una contraseña válida")
+      return
+    }
+    if(!formData.nombreCompleto){
+      alert("Por favor, introduzca un nombre completo válido")
+      return
+    }
+    if(!formData.pais){
+      alert("Por favor, seleccione un país válido")
+      return
+    }
+
+
+
     if (editingUser) {
       setUsers(users.map((u) => (u.id === editingUser.id ? { ...editingUser, ...formData } : u)))
     } else {
@@ -157,23 +150,28 @@ export default function UserManagement() {
 
   const canEditUser = (user) => {
     if (hasPermission("EditarUsuario")) {
-      if (currentUser?.rolNombre === "Administrador") return true
+      if (currentUser?.rolNombre === "Admin") return true
       if (currentUser?.rolNombre === "Operador" && user.rolNombre === "Cliente") return true
     }
     return false
   }
 
   const canDeleteUser = (user) => {
-    return hasPermission("EliminarUsuario") && currentUser?.rolNombre === "Administrador"
+    return hasPermission("EliminarUsuario") && currentUser?.rolNombre === "Admin"
   }
 
   const getVisibleUsers = () => {
-    if (currentUser?.rolNombre === "Administrador") {
+
+    if(!Array.isArray(users)){
+      return []
+    }
+
+    if (currentUser?.rolNombre === "Admin") {
       return users
     } else if (currentUser?.rolNombre === "Operador") {
       return users.filter((u) => u.rolNombre === "Cliente" || u.id === currentUser.id)
     } else {
-      return users.filter((u) => u.id === currentUser?.id)
+      return  users.filter((u) => u.id === currentUser?.id)
     }
   }
 
@@ -261,6 +259,14 @@ export default function UserManagement() {
               fullWidth
               required
             />
+            <TextField
+              label="Password"
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              fullWidth
+              required
+            />
             <FormControl fullWidth>
               <InputLabel>País</InputLabel>
               <Select
@@ -278,35 +284,13 @@ export default function UserManagement() {
             <FormControl fullWidth>
               <InputLabel>Rol</InputLabel>
               <Select
-                value={formData.rolNombre}
-                onChange={(e) => setFormData({ ...formData, rolNombre: e.target.value })}
+                value={formData.RolesId}
+                onChange={(e) => setFormData({ ...formData, RolesId: e.target.value })}
                 label="Rol"
               >
                 {roles.map((rol) => (
-                  <MenuItem key={rol} value={rol}>
-                    {rol}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl fullWidth>
-              <InputLabel>Permisos</InputLabel>
-              <Select
-                multiple
-                value={formData.permisos}
-                onChange={(e) => setFormData({ ...formData, permisos: e.target.value })}
-                label="Permisos"
-                renderValue={(selected) => (
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                    {selected.map((value) => (
-                      <Chip key={value} label={value} size="small" />
-                    ))}
-                  </Box>
-                )}
-              >
-                {availablePermissions.map((permission) => (
-                  <MenuItem key={permission} value={permission}>
-                    {permission}
+                  <MenuItem key={rol.id} value={rol.id}>
+                    {rol.name}
                   </MenuItem>
                 ))}
               </Select>
