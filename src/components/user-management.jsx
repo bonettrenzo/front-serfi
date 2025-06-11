@@ -24,9 +24,9 @@ import {
 } from "@mui/material"
 import { Edit, Delete, Add, Visibility } from "@mui/icons-material"
 import { useAuth } from "../contexts/auth-context"
-import { useCache } from "../contexts/cache-context"
 import PermissionGuard from "./permission-guard"
 import * as usuariosService from "../services/usuarios.service"
+import * as countriesService from "../services/countries.services"
 
 
 const roles = [{ id: 1, name: "Admin" }, { id: 2, name: "Operador" }, { id: 3, name: "Cliente" }]
@@ -34,7 +34,6 @@ const roles = [{ id: 1, name: "Admin" }, { id: 2, name: "Operador" }, { id: 3, n
 export default function UserManagement() {
   const { user: currentUser, hasPermission } = useAuth()
   const [loading, setloading] = useState(false)
-  const { getCache, setCache } = useCache()
   const [users, setUsers] = useState([])
   const [countries, setCountries] = useState([])
   const [openDialog, setOpenDialog] = useState(false)
@@ -66,25 +65,9 @@ export default function UserManagement() {
   }
 
   const loadCountries = async () => {
-    const cacheKey = "countries"
-    const cachedCountries = getCache(cacheKey)
-
-    if (cachedCountries) {
-      setCountries(cachedCountries)
-      return
-    }
-
-    try {
-      const response = await fetch("https://restcountries.com/v3.1/all?fields=name")
-      const data = await response.json()
-      const countryNames = data.map((country) => country.name.common).sort()
-
-      setCountries(countryNames)
-      setCache(cacheKey, countryNames, 3600000)
-    } catch (error) {
-      console.error("Error loading countries:", error)
-      setCountries(["Chile", "Argentina", "México", "Colombia", "Perú"])
-    }
+    countriesService.getCountries().then((countries) => {      
+      setCountries(countries)
+    })
   }
 
   const handleOpenDialog = (user) => {
@@ -300,11 +283,11 @@ export default function UserManagement() {
                 onChange={(e) => setFormData({ ...formData, pais: e.target.value })}
                 label="País"
               >
-                {countries.map((country) => (
-                  <MenuItem key={country} value={country}>
-                    {country}
+                { Array.isArray(countries) ? countries.map((country) => (
+                  <MenuItem key={country.commonName} value={country.commonName}>
+                    {country.commonName}  
                   </MenuItem>
-                ))}
+                )) : null}
               </Select>
             </FormControl>
             <FormControl fullWidth>

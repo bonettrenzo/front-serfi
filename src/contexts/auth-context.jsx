@@ -5,39 +5,6 @@ import * as authServices from "../services/auth.services"
 
 const AuthContext = createContext()
 
-const mockUsers = [
-  {
-    id: 1,
-    nombreCompleto: "Juan Pérez",
-    email: "admin@example.com",
-    password: "admin123",
-    pais: "Chile",
-    rolNombre: "Administrador",
-    permisos: ["CrearUsuario", "EditarUsuario", "EliminarUsuario", "LeerUsuarios", "LeerPropiosDatos"],
-    ultimaConexion: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    nombreCompleto: "María García",
-    email: "operador@example.com",
-    password: "operador123",
-    pais: "Argentina",
-    rolNombre: "Operador",
-    permisos: ["EditarUsuario", "LeerUsuarios", "LeerPropiosDatos"],
-    ultimaConexion: new Date().toISOString(),
-  },
-  {
-    id: 3,
-    nombreCompleto: "Carlos López",
-    email: "cliente@example.com",
-    password: "cliente123",
-    pais: "México",
-    rolNombre: "Cliente",
-    permisos: ["LeerPropiosDatos"],
-    ultimaConexion: new Date().toISOString(),
-  },
-]
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -91,7 +58,7 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
+    throw new Error("fuera de alcance")
   }
   return context
 }
