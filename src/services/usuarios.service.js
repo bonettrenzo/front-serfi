@@ -11,9 +11,9 @@ export const createUser = async ({ NombreCompleto, Email, Password, Pais, RolesI
     }
 }
 
-export const updateUser = async (id, { NombreCompleto, Email, Password, Pais, RolesId }) => {
+export const updateUser = async (id, { nombreCompleto, email, pais, rolesId }) => {
     try {
-        const response = await axios.put(userApi.updateAndDelete(id), { NombreCompleto, Email, Password, Pais, RolesId })
+        const response = await axios.put(userApi.updateAndDelete(id), { nombreCompleto, email, pais, rolesId })
         return response.data
     } catch (error) {
         console.log(error)

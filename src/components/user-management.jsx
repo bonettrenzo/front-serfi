@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import {
   Box,
   Typography,
@@ -33,6 +33,7 @@ const roles = [{ id: 1, name: "Admin" }, { id: 2, name: "Operador" }, { id: 3, n
 
 export default function UserManagement() {
   const { user: currentUser, hasPermission } = useAuth()
+  const [loading, setloading] = useState(false)
   const { getCache, setCache } = useCache()
   const [users, setUsers] = useState([])
   const [countries, setCountries] = useState([])
@@ -52,10 +53,16 @@ export default function UserManagement() {
   }, [])
 
   const loadUsers = async () => {
+    try{
+      setloading(true)
+      const users = await usuariosService.listUsers()
+      setUsers(users)
+      setloading(false)
+    }catch(err){
+      setloading(false)
+      console.log(err)
+    }
 
-    const users = await usuariosService.listUsers()
-    setUsers(users)    
- 
   }
 
   const loadCountries = async () => {
@@ -73,7 +80,7 @@ export default function UserManagement() {
       const countryNames = data.map((country) => country.name.common).sort()
 
       setCountries(countryNames)
-      setCache(cacheKey, countryNames, 3600000) 
+      setCache(cacheKey, countryNames, 3600000)
     } catch (error) {
       console.error("Error loading countries:", error)
       setCountries(["Chile", "Argentina", "México", "Colombia", "Perú"])
@@ -81,14 +88,18 @@ export default function UserManagement() {
   }
 
   const handleOpenDialog = (user) => {
+
+
     if (user) {
       setEditingUser(user)
       setFormData({
+        id: user.id,
         nombreCompleto: user.nombreCompleto,
         email: user.email,
         pais: user.pais,
         rolNombre: user.rolNombre,
-        permisos: user.permisos,
+        password: user.password,
+        RolesId: roles.find(i => i.name === user.rolNombre).id,
       })
     } else {
       setEditingUser(null)
@@ -97,7 +108,7 @@ export default function UserManagement() {
         email: "",
         pais: "",
         rolNombre: "",
-        permisos: [],
+        RolesId: "",
       })
     }
     setOpenDialog(true)
@@ -110,41 +121,54 @@ export default function UserManagement() {
 
   const handleSave = () => {
 
-    if(!formData.email){
+    if (!formData.email) {
       alert("Por favor, introduzca un correo electrónico válido")
       return
     }
-    if(!formData.password){
+    if (!formData.password && !editingUser) {
       alert("Por favor, introduzca una contraseña válida")
       return
     }
-    if(!formData.nombreCompleto){
+    if (!formData.nombreCompleto) {
       alert("Por favor, introduzca un nombre completo válido")
       return
     }
-    if(!formData.pais){
+    if (!formData.pais) {
       alert("Por favor, seleccione un país válido")
       return
     }
 
-
-
     if (editingUser) {
-      setUsers(users.map((u) => (u.id === editingUser.id ? { ...editingUser, ...formData } : u)))
+      usuariosService.updateUser(formData?.id, {
+        nombreCompleto: formData.nombreCompleto,
+        email: formData.email,
+        pais: formData.pais,
+        rolesId: formData.RolesId
+      }).then(() => {
+        loadUsers()
+      })
     } else {
-      const newUser = {
-        id: Math.max(...users.map((u) => u.id)) + 1,
-        ...formData,
-        ultimaConexion: new Date().toISOString(),
-      }
-      setUsers([...users, newUser])
+      usuariosService.createUser({
+        NombreCompleto: formData.nombreCompleto,
+        Email: formData.email,
+        Password: formData.password,
+        Pais: formData.pais,
+        RolesId: formData.RolesId
+      }).then((value) => {
+        if (value?.id) {
+          loadUsers()
+
+        }
+      })
     }
     handleCloseDialog()
   }
 
   const handleDelete = (userId) => {
     if (window.confirm("¿Estás seguro de que quieres eliminar este usuario?")) {
-      setUsers(users.filter((u) => u.id !== userId))
+      usuariosService.deleteUser(userId).then(() => {
+        loadUsers()
+      })
     }
   }
 
@@ -162,7 +186,7 @@ export default function UserManagement() {
 
   const getVisibleUsers = () => {
 
-    if(!Array.isArray(users)){
+    if (!Array.isArray(users)) {
       return []
     }
 
@@ -171,7 +195,7 @@ export default function UserManagement() {
     } else if (currentUser?.rolNombre === "Operador") {
       return users.filter((u) => u.rolNombre === "Cliente" || u.id === currentUser.id)
     } else {
-      return  users.filter((u) => u.id === currentUser?.id)
+      return users.filter((u) => u.id === currentUser?.id)
     }
   }
 
@@ -200,7 +224,7 @@ export default function UserManagement() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {getVisibleUsers().map((user) => (
+            { loading ? <h3 >Cargando...</h3> :  getVisibleUsers().map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.nombreCompleto}</TableCell>
                 <TableCell>{user.email}</TableCell>
@@ -240,7 +264,7 @@ export default function UserManagement() {
         </Table>
       </TableContainer>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+      <Dialog  open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>{editingUser ? "Editar Usuario" : "Nuevo Usuario"}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
@@ -259,14 +283,16 @@ export default function UserManagement() {
               fullWidth
               required
             />
-            <TextField
+
+            {!editingUser ? <TextField
               label="Password"
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               fullWidth
               required
-            />
+            /> : null}
+
             <FormControl fullWidth>
               <InputLabel>País</InputLabel>
               <Select
