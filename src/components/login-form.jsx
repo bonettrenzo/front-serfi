@@ -83,13 +83,13 @@ export default function LoginForm() {
               Usuarios de prueba:
             </Typography>
             <Typography variant="caption" display="block">
-              Admin: admin@example.com / admin123
+              Admin: admin@admin.com / admin
             </Typography>
             <Typography variant="caption" display="block">
-              Operador: operador@example.com / operador123
+              Operador: operador@admin.com / admin
             </Typography>
             <Typography variant="caption" display="block">
-              Cliente: cliente@example.com / cliente123
+              Cliente: cliente@admin.com / admin
             </Typography>
           </Box>
         </Paper>

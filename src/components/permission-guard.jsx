@@ -28,7 +28,7 @@ export default function PermissionGuard({ permission, children }) {
           <DialogContent>
             <Typography>No tienes el permiso necesario para acceder a esta funcionalidad.</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              Permiso requerido: <strong>{permission}</strong>
+              Permiso requerido: <strong style={{color: "red"}}>{permission}</strong>
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Contacta con tu administrador si necesitas acceso.

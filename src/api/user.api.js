@@ -1,2 +1,4 @@
-export const createAndList = "https://localhost:7287/User"  /* -> POST and GET */
-export const updateAndDelete = (id) => `https://localhost:7287/User/${id}`  /* -> PUT and DELETE */
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
+export const createAndList = `${API_BASE_URL}/User`  /* -> POST and GET */
+export const updateAndDelete = (id) => `${API_BASE_URL}/User/${id}`  /* -> PUT and DELETE */

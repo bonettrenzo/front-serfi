@@ -4,6 +4,8 @@ import CssBaseline from "@mui/material/CssBaseline"
 import LoginForm from "./components/login-form"
 import Dashboard from "./components/dashboard"
 import { AuthProvider, useAuth } from "./contexts/auth-context"
+import { ToastContainer } from 'react-toastify';
+
 
 const theme = createTheme({
   palette: {
@@ -33,6 +35,7 @@ export default function App() {
       <CssBaseline />
       <AuthProvider>
           <AppContent />
+          <ToastContainer />
       </AuthProvider>
     </ThemeProvider>
   )

@@ -27,6 +27,7 @@ import { useAuth } from "../contexts/auth-context"
 import PermissionGuard from "./permission-guard"
 import * as usuariosService from "../services/usuarios.service"
 import * as countriesService from "../services/countries.services"
+import { toast } from "react-toastify"
 
 
 const roles = [{ id: 1, name: "Admin" }, { id: 2, name: "Operador" }, { id: 3, name: "Cliente" }]
@@ -38,6 +39,7 @@ export default function UserManagement() {
   const [countries, setCountries] = useState([])
   const [openDialog, setOpenDialog] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
+  const [visibility, setVisivility] = useState(false)
   const [formData, setFormData] = useState({
     nombreCompleto: "",
     password: "",
@@ -52,12 +54,12 @@ export default function UserManagement() {
   }, [])
 
   const loadUsers = async () => {
-    try{
+    try {
       setloading(true)
       const users = await usuariosService.listUsers()
       setUsers(users)
       setloading(false)
-    }catch(err){
+    } catch (err) {
       setloading(false)
       console.log(err)
     }
@@ -65,13 +67,12 @@ export default function UserManagement() {
   }
 
   const loadCountries = async () => {
-    countriesService.getCountries().then((countries) => {      
+    countriesService.getCountries().then((countries) => {
       setCountries(countries)
     })
   }
 
   const handleOpenDialog = (user) => {
-
 
     if (user) {
       setEditingUser(user)
@@ -99,29 +100,42 @@ export default function UserManagement() {
 
   const handleCloseDialog = () => {
     setOpenDialog(false)
+    setVisivility(false)
     setEditingUser(null)
   }
 
   const handleSave = () => {
 
     if (!formData.email) {
-      alert("Por favor, introduzca un correo electrónico válido")
+      toast.error("Por favor, introduzca un correo electrónico válido")
       return
     }
+
+    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast.error("Por favor, introduzca un correo electrónico válido");
+      return;
+    }
+
     if (!formData.password && !editingUser) {
-      alert("Por favor, introduzca una contraseña válida")
+      toast.error("Por favor, introduzca una contraseña válida")
       return
     }
     if (!formData.nombreCompleto) {
-      alert("Por favor, introduzca un nombre completo válido")
+      toast.error("Por favor, introduzca un nombre completo válido")
       return
     }
     if (!formData.pais) {
-      alert("Por favor, seleccione un país válido")
+      toast.error("Por favor, seleccione un país válido")
+      return
+    }
+
+    if (!formData.RolesId) {
+      toast.error("Por favor, seleccione un rol válido")
       return
     }
 
     if (editingUser) {
+      setloading(true)
       usuariosService.updateUser(formData?.id, {
         nombreCompleto: formData.nombreCompleto,
         email: formData.email,
@@ -129,8 +143,10 @@ export default function UserManagement() {
         rolesId: formData.RolesId
       }).then(() => {
         loadUsers()
-      })
+        handleCloseDialog()
+      }).finally(() => setloading(false))
     } else {
+      setloading(true)
       usuariosService.createUser({
         NombreCompleto: formData.nombreCompleto,
         Email: formData.email,
@@ -140,18 +156,19 @@ export default function UserManagement() {
       }).then((value) => {
         if (value?.id) {
           loadUsers()
-
+          handleCloseDialog()
         }
-      })
+      }).finally(() => setloading(false))
     }
-    handleCloseDialog()
+
   }
 
   const handleDelete = (userId) => {
     if (window.confirm("¿Estás seguro de que quieres eliminar este usuario?")) {
+      setloading(true)
       usuariosService.deleteUser(userId).then(() => {
         loadUsers()
-      })
+      }).finally(() => setloading(false))
     }
   }
 
@@ -207,7 +224,7 @@ export default function UserManagement() {
             </TableRow>
           </TableHead>
           <TableBody>
-            { loading ? <h3 >Cargando...</h3> :  getVisibleUsers().map((user) => (
+            {loading ? <h3 >Cargando...</h3> : getVisibleUsers().map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.nombreCompleto}</TableCell>
                 <TableCell>{user.email}</TableCell>
@@ -227,7 +244,7 @@ export default function UserManagement() {
                   {user.ultimaConexion ? new Date(user.ultimaConexion).toLocaleDateString() : "N/A"}
                 </TableCell>
                 <TableCell>
-                  <IconButton onClick={() => handleOpenDialog(user)}>
+                  <IconButton onClick={() => { handleOpenDialog(user); setVisivility(true) }}>
                     <Visibility />
                   </IconButton>
                   {canEditUser(user) && (
@@ -247,7 +264,7 @@ export default function UserManagement() {
         </Table>
       </TableContainer>
 
-      <Dialog  open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>{editingUser ? "Editar Usuario" : "Nuevo Usuario"}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
@@ -283,9 +300,9 @@ export default function UserManagement() {
                 onChange={(e) => setFormData({ ...formData, pais: e.target.value })}
                 label="País"
               >
-                { Array.isArray(countries) ? countries.map((country) => (
+                {Array.isArray(countries) ? countries.map((country) => (
                   <MenuItem key={country.commonName} value={country.commonName}>
-                    {country.commonName}  
+                    {country.commonName}
                   </MenuItem>
                 )) : null}
               </Select>
@@ -308,9 +325,9 @@ export default function UserManagement() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleSave} variant="contained">
+          {!visibility ? <Button disabled={loading} onClick={handleSave} variant="contained">
             {editingUser ? "Actualizar" : "Crear"}
-          </Button>
+          </Button> : null}
         </DialogActions>
       </Dialog>
     </Box>
