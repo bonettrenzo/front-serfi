@@ -91,6 +91,10 @@ export default function LoginForm() {
             <Typography variant="caption" display="block">
               Cliente: cliente@admin.com / admin
             </Typography>
+
+            <Typography variant="body1" display="block">
+              El servicio puede tardar un poco en el primer uso!
+            </Typography>
           </Box>
         </Paper>
       </Box>
